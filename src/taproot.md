@@ -63,3 +63,36 @@ sequenceDiagram
     K->>S: Schnorr Sign
     S->>W: 64-byte Sig
 ```
+---
+
+## Chapter 11: Tapscript (BIP342) ✅
+
+### 11.1 New Opcodes for Taproot ✅
+
+| Opcode | Behavior |
+|--------|----------|
+| `OP_CHECKSIG` | Pops pubkey and signature, pushes 1 if valid, 0 if invalid |
+| `OP_CHECKSIGADD` | Pops pubkey, signature, and counter; pushes counter+1 if valid, counter if invalid |
+
+### 11.2 Building a 2-of-2 Multisig in Tapscript ✅
+
+```mermaid
+graph TD
+    subgraph Script["2-of-2 Multisig Script"]
+        S1["<pubkey0>"]
+        S2["OP_CHECKSIG"]
+        S3["<pubkey1>"]
+        S4["OP_CHECKSIGADD"]
+        S5["OP_2"]
+        S6["OP_EQUAL"]
+    end
+    
+    subgraph Execution["Execution with valid signatures"]
+        E1["Stack: [sig1] [sig0]"]
+        E2["Push pubkey0, CHECKSIG → [sig1] [1]"]
+        E3["Push pubkey1, CHECKSIGADD → [1] → [2]"]
+        E4["Push 2, EQUAL → [true]"]
+    end
+    
+    Script --> Execution
+```
