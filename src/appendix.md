@@ -123,28 +123,4 @@ graph TD
 
 ---
 
-## H. Learning Path Recommendations ✅
-
-### Beginner Path
-1. Read Part I (Architecture) to understand how Bitcoin Core works
-2. Read Chapter 7 (Transaction Structure) to see what transactions contain
-3. Read Chapter 3 (Hashing) to understand the cryptographic building blocks
-4. Practice: Use `bitcoin-cli` to explore real transactions
-
-### Intermediate Path
-1. Complete Beginner Path
-2. Read Part III (Key Management) for wallet concepts
-3. Read Chapter 8 (Scripts) to understand spending conditions
-4. Read Chapter 12 (Coin Selection) for practical wallet operations
-5. Practice: Build a simple wallet that can scan and report balances
-
-### Advanced Path
-1. Complete Intermediate Path
-2. Read Part V (Taproot) in depth
-3. Study Chapter 10 (BIP341 Signatures) carefully
-4. Read Chapter 11 (Tapscript) for script-path spending
-5. Practice: Implement full Taproot key-path and script-path spending
-
----
-
 *This curated guide was validated against [bitcoincore.academy](https://bitcoincore.academy/) on January 30, 2026. For the most current information, always consult the official Bitcoin Core documentation and source code.*
