@@ -1,7 +1,6 @@
 [book]
 authors = ["diegobianqui"]
 language = "en"
-multilingual = false
 src = "src"
 title = "Bitcoin Core Development Study Guide"
 
@@ -9,5 +8,6 @@ title = "Bitcoin Core Development Study Guide"
 command = "mdbook-mermaid"
 
 [output.html]
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
 git-repository-url = "https://github.com/diegobianqui/BOSS_Syllabus"
 edit-url-template = "https://github.com/diegobianqui/BOSS_Syllabus/edit/main/src/{path}"

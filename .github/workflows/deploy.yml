@@ -24,14 +24,14 @@ jobs:
 
       - name: Install mdBook-Mermaid
         run: |
-          curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.14.0/mdbook-mermaid-v0.14.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+          curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.17.0/mdbook-mermaid-v0.17.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz
           chmod +x mdbook-mermaid
           sudo mv mdbook-mermaid /usr/local/bin/
 
       - name: Build Book
         run: |
-          # We skip 'mdbook-mermaid install .' as it can be flaky in CI
-          # The preprocessor will handle diagram rendering
+          # The install command copies mermaid assets into the book directory
+          mdbook-mermaid install .
           mdbook build
 
       - name: Upload Artifact
