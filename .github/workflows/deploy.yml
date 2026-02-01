@@ -22,17 +22,26 @@ jobs:
         with:
           mdbook-version: 'latest'
 
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Install mdBook-Mermaid
         run: |
-          curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.14.0/mdbook-mermaid-v0.14.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz
-          # Ensure the binary is in the correct place and executable
-          ls -l mdbook-mermaid || find . -name "mdbook-mermaid"
-          chmod +x mdbook-mermaid || true
-          sudo mv mdbook-mermaid /usr/local/bin/ || sudo find . -name "mdbook-mermaid" -exec mv {} /usr/local/bin/ \;
+          if ! command -v mdbook-mermaid &> /dev/null; then
+            cargo install mdbook-mermaid
+          fi
 
       - name: Build Book
         run: |
-          # mdbook-mermaid needs to be in PATH for mdbook to find the preprocessor
           mdbook-mermaid install .
           mdbook build
 
