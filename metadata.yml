@@ -1,0 +1,18 @@
+---
+title: "BOSS Syllabus"
+subtitle: "Business Operations and Strategic Systems"
+author: "BOSS Course Team"
+date: "2026"
+lang: en-US
+documentclass: book
+geometry: margin=1in
+fontsize: 12pt
+mainfont: "DejaVu Sans"
+monofont: "DejaVu Sans Mono"
+toc: true
+toc-depth: 2
+numbersections: true
+colorlinks: true
+linkcolor: blue
+urlcolor: blue
+---

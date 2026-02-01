@@ -1,0 +1,19 @@
+# Output directory
+output/
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# LaTeX intermediate files
+*.aux
+*.log
+*.out
+*.toc
+*.lot
+*.lof
+
+# OS specific files
+.DS_Store
+Thumbs.db
