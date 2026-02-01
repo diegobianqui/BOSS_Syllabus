@@ -5,6 +5,9 @@ multilingual = false
 src = "src"
 title = "Bitcoin Core Development Study Guide"
 
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
 [output.html]
 git-repository-url = "https://github.com/diegobianqui/BOSS_Syllabus"
 edit-url-template = "https://github.com/diegobianqui/BOSS_Syllabus/edit/main/src/{path}"
