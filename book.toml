@@ -3,6 +3,7 @@ authors = ["diegobianqui"]
 language = "en"
 src = "src"
 title = "Bitcoin Core Development Study Guide"
+description = "A comprehensive curated edition of the Bitcoin Core Development Study Guide."
 
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
