@@ -1,0 +1,401 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Part I: Bitcoin Core Architecture - Bitcoin Core Development Study Guide</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="architecture.html" class="active"><strong aria-hidden="true">2.</strong> Part I: Bitcoin Core Architecture</a></li><li class="chapter-item expanded "><a href="cryptography.html"><strong aria-hidden="true">3.</strong> Part II: Cryptographic Foundations</a></li><li class="chapter-item expanded "><a href="wallets.html"><strong aria-hidden="true">4.</strong> Part III: Key Management & Wallets</a></li><li class="chapter-item expanded "><a href="transactions.html"><strong aria-hidden="true">5.</strong> Part IV: Transactions Deep Dive</a></li><li class="chapter-item expanded "><a href="taproot.html"><strong aria-hidden="true">6.</strong> Part V: Taproot & Modern Bitcoin</a></li><li class="chapter-item expanded "><a href="implementation.html"><strong aria-hidden="true">7.</strong> Part VI: Practical Implementation Patterns</a></li><li class="chapter-item expanded "><a href="appendix.html"><strong aria-hidden="true">8.</strong> Appendix: Quick Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Bitcoin Core Development Study Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/diegobianqui/BOSS_Syllabus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/diegobianqui/BOSS_Syllabus/edit/main/src/src/architecture.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="part-i-bitcoin-core-architecture"><a class="header" href="#part-i-bitcoin-core-architecture">Part I: Bitcoin Core Architecture</a></h1>
+<h2 id="chapter-1-the-bitcoin-core-node-"><a class="header" href="#chapter-1-the-bitcoin-core-node-">Chapter 1: The Bitcoin Core Node ✅</a></h2>
+<p>Bitcoin Core is the reference implementation of the Bitcoin protocol. It serves as the "Source of Truth" for what is considered a valid transaction or block. Understanding the node's internal structure is critical because it explains the performance limitations and safety guarantees you must navigate as a developer.</p>
+<p>Historically, Bitcoin Core started as a monolithic C++ application where most logic resided in a single file (<code>main.cpp</code>). Over the last decade, it has evolved into a highly modular system of libraries, separated to improve testing, security, and build times.</p>
+<h3 id="11-layered-architecture-"><a class="header" href="#11-layered-architecture-">1.1 Layered Architecture ⚠️</a></h3>
+<p>The node is divided into distinct functional areas. The <strong>P2P Layer</strong> handles the noisy reality of the internet—connecting to peers and relaying data. The <strong>Validation Engine</strong> (Consensus) applies the strict rules of Bitcoin to everything the P2P layer receives. The <strong>Storage Layer</strong> persists this validated data efficiently to disk, while the <strong>RPC Layer</strong> provides a gateway for external applications to query state or submit new transactions.</p>
+<pre><code class="language-mermaid">graph TB
+    subgraph External["External Interface"]
+        CLI["bitcoin-cli"]
+        GUI["Bitcoin-Qt GUI"]
+        API["JSON-RPC API"]
+    end
+    
+    subgraph RPCLayer["RPC Layer (libevent2)"]
+        RH["RPC Handlers (2 for RPC)"]
+        REST["REST Handlers (12)"]
+        RP["Request Parser"]
+        RS["Response Serializer"]
+    end
+    
+    subgraph Logic["Core Logic"]
+        VAL["Validation Engine"]
+        MEM["CTxMemPool"]
+        CHAIN["ChainstateManager"]
+        WALLET["CWallet + SPKMs"]
+    end
+    
+    subgraph Storage["Storage Layer"]
+        BLOCKS["BlockManager"]
+        UTXODB["UTXO Set (LevelDB)"]
+        WALLETDB["WalletDatabase"]
+    end
+    
+    subgraph Network["P2P Network"]
+        PEERS["PeerManager"]
+        CONN["CConnman"]
+        ADDR["AddrMan"]
+        RELAY["Transaction Relay"]
+    end
+    
+    CLI --&gt; API
+    GUI --&gt; API
+    API --&gt; RP
+    RP --&gt; RH
+    RH --&gt; VAL
+    RH --&gt; MEM
+    RH --&gt; WALLET
+    VAL --&gt; CHAIN
+    MEM --&gt; CHAIN
+    CHAIN --&gt; BLOCKS
+    CHAIN --&gt; UTXODB
+    WALLET --&gt; WALLETDB
+    PEERS --&gt; CONN
+    CONN --&gt; ADDR
+    MEM --&gt; RELAY
+    RELAY --&gt; PEERS
+</code></pre>
+<h3 id="12-the-rpc-interface-"><a class="header" href="#12-the-rpc-interface-">1.2 The RPC Interface ✅</a></h3>
+<p>The RPC (Remote Procedure Call) interface is the primary way developers interact with a running node. Unlike a simple REST API, the RPC server is designed for high-integrity interaction with the local process. Internally, Bitcoin Core uses <code>libevent2</code> to handle incoming HTTP requests asynchronously across multiple worker threads.</p>
+<p>When you issue a command, it is parsed into a request object, placed into a global work queue (<code>g_work_queue</code>), and picked up by the next available worker thread to be executed against the core logic pointers.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant CLI as bitcoin-cli
+    participant HTTP as HTTP Server (libevent2)
+    participant WQ as WorkQueue
+    participant Handler as RPC Handler
+    participant Chain as Chain State
+    
+    CLI-&gt;&gt;HTTP: HTTP POST {"method": "getblockcount"}
+    HTTP-&gt;&gt;HTTP: Create HTTPWorkItem
+    HTTP-&gt;&gt;WQ: Add to global g_work_queue
+    WQ-&gt;&gt;Handler: Worker thread processes
+    Handler-&gt;&gt;Chain: Query chain tip height
+    Chain--&gt;&gt;Handler: Return height (e.g., 850000)
+    Handler-&gt;&gt;Handler: HTTPRequest::WriteReply()
+    Handler--&gt;&gt;CLI: evhttp_send_reply() → {"result": 850000}
+</code></pre>
+<h3 id="13-bitcoin-core-source-organization-"><a class="header" href="#13-bitcoin-core-source-organization-">1.3 Bitcoin Core Source Organization ⚠️</a></h3>
+<p>Navigating the <code>bitcoin/src/</code> directory requires understanding the internal library dependencies. The codebase is organized to prevent circular dependencies, with specialized libraries for consensus, networking, and wallet management.</p>
+<blockquote>
+<p><strong>Note</strong>: For developers, the <code>consensus/</code> folder is the most sacred, as any change there could accidentally fork your node away from the rest of the network.</p>
+</blockquote>
+<pre><code>bitcoin/src/
+├── rpc/                    # RPC handlers (your external interface)
+├── consensus/              # libbitcoin_consensus.a (standalone layer)
+├── wallet/                 # libbitcoin_wallet.a (terminal dependency)
+├── script/                 # Script interpreter and standard patterns
+├── node/                   # libbitcoin_server.a (main node logic)
+├── util/                   # General utility functions
+└── net/                    # P2P and connection management
+</code></pre>
+<h3 id="14-signet-the-developers-testnet-"><a class="header" href="#14-signet-the-developers-testnet-">1.4 Signet: The Developer's Testnet ✅</a></h3>
+<p>Developing on the live Bitcoin network (Mainnet) is expensive and risky. Traditional Testnet is often "unstable" because blocks can be mined very quickly (block storms) or very slowly. <strong>Signet</strong> solves this by using a centralized "signing" authority to produce blocks at predictable 10-minute intervals. This gives developers a stable, free environment that perfectly mimics the behavior of Mainnet without the volatility.</p>
+<hr />
+<h2 id="chapter-2-data-flow-through-bitcoin-core"><a class="header" href="#chapter-2-data-flow-through-bitcoin-core">Chapter 2: Data Flow Through Bitcoin Core</a></h2>
+<h3 id="21-transaction-lifecycle-"><a class="header" href="#21-transaction-lifecycle-">2.1 Transaction Lifecycle ⚠️</a></h3>
+<p>Every transaction undergoes two distinct types of checks: <strong>Consensus</strong> and <strong>Policy</strong>. Consensus rules (e.g., "no double spending") are eternal and shared by all nodes. Policy rules (e.g., "minimum fee rate") are local preferences that help nodes protect their resources (RAM and CPU) from spam.</p>
+<p>A transaction enters the system either from your wallet, an RPC call, or the P2P network. It must pass <code>AcceptToMemoryPool()</code> before it is eligible to be broadcast to other peers or included in a block by a miner.</p>
+<pre><code class="language-mermaid">graph TD
+    subgraph Origins["Transaction Origins"]
+        P2P["P2P Network&lt;br/&gt;(NetMsgType::TX)"]
+        WALLET["Wallet"]
+        RPCO["RPCs"]
+    end
+    
+    subgraph MempoolPath["Mempool Path (Consensus + Policy)"]
+        ATMP["AcceptToMemoryPool()"]
+        CONS1["Consensus Checks"]
+        POL["Policy Checks"]
+        MEM["Add to CTxMemPool"]
+    end
+    
+    subgraph BlockPath["Block Path (Consensus Only)"]
+        BLOCK["NetMsgType::BLOCK"]
+        CONS2["Consensus Checks Only"]
+        SKIP["Skip Policy Checks"]
+    end
+    
+    subgraph Propagation["3. Network Propagation"]
+        INV["Announce to peers"]
+        REQ["Peers request tx"]
+        SEND["Send full transaction"]
+    end
+    
+    subgraph Mining["4. Mining"]
+        PICK["Miner selects tx"]
+        MINE["Include in block"]
+        POW["Proof of work"]
+    end
+    
+    subgraph Confirmation["5. Confirmation"]
+        BROAD["Broadcast block"]
+        VAL2["Network validates"]
+        UTXO["Update UTXO set"]
+    end
+    
+    P2P --&gt; ATMP
+    WALLET --&gt; ATMP
+    RPCO --&gt; ATMP
+    ATMP --&gt; CONS1 --&gt; POL --&gt; MEM
+    
+    BLOCK --&gt; CONS2 --&gt; SKIP --&gt; UTXO
+    
+    MEM --&gt; INV --&gt; REQ --&gt; SEND
+    MEM --&gt; PICK --&gt; MINE --&gt; POW
+    POW --&gt; BROAD --&gt; VAL2 --&gt; UTXO
+</code></pre>
+<h3 id="22-block-validation-process-"><a class="header" href="#22-block-validation-process-">2.2 Block Validation Process ⚠️</a></h3>
+<p>When a new block arrives, the node must perform a cascade of checks. The most expensive part of this is verifying every signature in every transaction. To optimize this, Bitcoin Core uses a <strong>Script Cache</strong>. If a transaction was already validated when it entered the mempool, the node remembers its validity and skips the duplicate work when that transaction finally appears in a block.</p>
+<pre><code class="language-mermaid">graph TD
+    B[New Block Arrives] --&gt; H{Header Valid?}
+    H --&gt;|No| REJECT1[Reject Block]
+    H --&gt;|Yes| POW{PoW Valid?}
+    POW --&gt;|No| REJECT2[Reject Block]
+    POW --&gt;|Yes| PARENT{Parent Block Known?}
+    PARENT --&gt;|No| ORPHAN[Store as Orphan]
+    PARENT --&gt;|Yes| TXS{All Transactions Valid?}
+    TXS --&gt;|No| REJECT3[Reject Block]
+    TXS --&gt;|Yes| UTXO{UTXO Rules Satisfied?}
+    UTXO --&gt;|No| REJECT4[Reject Block]
+    UTXO --&gt;|Yes| CACHE{Script in cache?}
+    CACHE --&gt;|Yes| SKIPCACHE[Skip script check]
+    CACHE --&gt;|No| SCRIPTS{All Scripts Pass?}
+    SCRIPTS --&gt;|No| REJECT5[Reject Block]
+    SCRIPTS --&gt;|Yes| ACCEPT[Accept Block]
+    SKIPCACHE --&gt; ACCEPT
+    ACCEPT --&gt; UPDATE[Update Chain State]
+    UPDATE --&gt; RELAY[Relay to Peers]
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="cryptography.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="cryptography.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
