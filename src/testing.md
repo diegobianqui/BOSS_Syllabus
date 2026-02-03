@@ -1,4 +1,4 @@
-# Part VII: The Bitcoin Core Test Framework
+# Part VIII: The Bitcoin Core Test Framework
 
 ## Chapter 14: Simulation & Quality Assurance
 

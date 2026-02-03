@@ -1,4 +1,4 @@
-# Part V: Taproot & Modern Bitcoin
+# Part VI: Taproot & Modern Bitcoin
 
 ## Chapter 9: The Taproot Architecture (BIP 340, 341, 342)
 

@@ -1,4 +1,4 @@
-# Part VI: Practical Implementation Patterns
+# Part VII: Practical Implementation Patterns
 
 ## Chapter 12: Coin Selection ⚠️
 
