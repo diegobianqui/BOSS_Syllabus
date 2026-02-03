@@ -1,0 +1,10 @@
+# References
+ref/
+
+# mdBook
+book/
+mermaid.min.js
+mermaid-init.js
+
+# OS specific files
+.DS_Store

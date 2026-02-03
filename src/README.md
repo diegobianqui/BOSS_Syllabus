@@ -2,7 +2,7 @@
 
 ## What This Guide Covers ✅
 
-This study guide synthesizes the multi-disciplinary knowledge required to understand Bitcoin at a professional development level. Rather than focusing purely on theory, it follows the architectural requirements of building a modern Bitcoin wallet. The journey is structured around four progressive technical challenges that mirror the complexities of the protocol.
+This study guide synthesizes the multi-disciplinary knowledge required to understand Bitcoin core . Rather than focusing purely on theory, it follows the architectural requirements of building a modern Bitcoin wallet. The journey is structured around four progressive technical challenges that mirror the complexities of the protocol.
 
 First, we explore the internal architecture of a node to understand how it exposes data. Second, we dive into key management and the intensive process of scanning the blockchain for historical funds. Third, we master the creation of modern transactions using Taproot and Schnorr signatures. Finally, we address the economic optimization of Bitcoin through advanced coin selection and fee management.
 
