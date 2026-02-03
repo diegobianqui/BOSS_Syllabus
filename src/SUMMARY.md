@@ -7,4 +7,5 @@
 - [Part IV: Transactions Deep Dive](./transactions.md)
 - [Part V: Taproot & Modern Bitcoin](./taproot.md)
 - [Part VI: Practical Implementation Patterns](./implementation.md)
+- [Part VII: The Bitcoin Core Test Framework](./testing.md)
 - [Appendix: Quick Reference](./appendix.md)
