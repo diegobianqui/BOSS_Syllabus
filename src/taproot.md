@@ -1,98 +1,115 @@
 # Part V: Taproot & Modern Bitcoin
 
-## Chapter 9: Understanding Taproot ✅
+## Chapter 9: The Taproot Architecture (BIP 340, 341, 342)
 
-### 9.1 The Taproot Vision ✅
+### 9.1 The Problem 
 
-Taproot is the most significant upgrade to Bitcoin since SegWit. Its primary goal is privacy and efficiency through **Mast (Merkelized Alternative Script Trees)** and **Schnorr Signatures**. In Taproot, a user can have multiple ways to spend their money: a simple signature (Key Path) OR a complex set of conditions (Script Path). On-chain, a Key Path spend looks identical to any other Taproot spend, hiding the fact that other conditions even existed.
+Before Taproot, complex scripts (like a Multisig combined with a Time-Lock) had to reveal all their conditions on-chain. This had two costs:
+1.  **Privacy**: An observer could see you were using a complex setup.
+2.  **Efficiency**: You paid fees for bytes (unused script branches) that were never executed.
+
+**Taproot** unifies all outputs to look like a single public key. Whether it's a simple payment to Alice or a 100-person multisig with a time-lock backup, on-chain it looks like a standard `P2TR` output.
+
+### 9.2 Schnorr Signatures (BIP 340)
+
+Taproot introduces a new signature scheme. Unlike ECDSA, **Schnorr** signatures are linear.
+*   **Property**: $Sig(Key_A) + Sig(Key_B) = Sig(Key_A + Key_B)$
+*   **Implication (Key Aggregation)**: Multiple parties can combine their public keys into one aggregate key and sign jointly. The blockchain sees only *one* public key and *one* signature.
+
+### 9.3 Merkle Abstract Syntax Trees (MAST)
+
+Taproot allows us to commit to a **tree of scripts** without revealing the entire tree.
+*   **Leaf**: A specific spending condition (e.g., "Alice can spend after Tuesday").
+*   **Root**: The Merkle Root of all leaves.
+
+We "hide" this root inside the public key itself using a commitment scheme.
 
 ```mermaid
 graph TD
-    subgraph Output["Taproot Output"]
-        PROG["OP_1 <output_key>"]
+    subgraph Structure["Taproot Structure"]
+        INT["Internal Key (Q)"]
+        ROOT["Merkle Root (T)"]
+        OUT["Output Key (P)"]
     end
     
-    subgraph Paths["Spending Paths"]
-        KEY["Key Path (Private)"]
-        SCRIPT["Script Path (Flexible)"]
+    subgraph Formula["Commitment"]
+        F["P = Q + H(Q||T) * G"]
     end
     
-    Output --> KEY
-    Output --> SCRIPT
-```
-
-### 9.2 Taproot Key Structure ✅
-
-The magic of Taproot lies in **Key Tweaking**. We take an "Internal Key" (P) and modify it by adding a hash of the "Script Tree" (T). The resulting "Output Key" (Q) commits to both the key and the scripts. To spend via the Key Path, you tweak your private key in the same way. To spend via the Script Path, you reveal the script and prove it was part of the original commitment.
-
-```mermaid
-graph TD
-    subgraph Tweak["Tweak Computation"]
-        INT["Internal Key (P)"]
-        TREE["Script Tree"]
-        TAGGED["t = tagged_hash('TapTweak', P || merkle_root)"]
-        OUT["Q = P + t*G"]
-    end
-    
-    INT --> TAGGED
-    TREE --> TAGGED
-    TAGGED --> OUT
+    INT --> F
+    ROOT --> F
+    F --> OUT
 ```
 
 ---
 
-## Chapter 10: Taproot Signatures (BIP341) ✅
+## Chapter 10: Spending Paths
 
-### 10.1 The Commitment Hash ✅
+A Taproot output can be spent in two ways. The spender chooses the path that grants the most privacy/efficiency for their situation.
 
-Signing for Taproot requires a much more complex "Signature Hash" (Sighash) than legacy types. It includes references to all inputs and their values to prevent "fee-sniping" and other subtle attacks. This commitment hash is what the Schnorr algorithm actually signs.
+### 10.1 Key Path Spend (The Happy Path)
+If all parties agree (or if it's a single user), they can sign with the **Output Key (P)**.
+*   **Mechanism**: They cooperate to create a Schnorr signature for the tweaked key.
+*   **On-Chain Footprint**: One signature (64 bytes).
+*   **Privacy**: Indistinguishable from a regular single-sig payment. The script tree remains hidden forever.
 
-### 10.2 Key Path vs Script Path Signing ✅
-
-- **Key Path**: The wallet tweaks the private key, checks the Y-coordinate parity (negating the key if necessary), and creates a single 64-byte signature.
-- **Script Path**: The wallet reveals the specific script, provides a Merkle proof (the Control Block), and signs with untweaked keys as defined in that script.
-
-```mermaid
-sequenceDiagram
-    participant W as Wallet
-    participant K as Private Key
-    participant S as Signature
-    
-    W->>W: Compute TapSighash
-    W->>K: Tweak Key + Check Parity
-    K->>S: Schnorr Sign
-    S->>W: 64-byte Sig
-```
----
-
-## Chapter 11: Tapscript (BIP342) ✅
-
-### 11.1 New Opcodes for Taproot ✅
-
-| Opcode | Behavior |
-|--------|----------|
-| `OP_CHECKSIG` | Pops pubkey and signature, pushes 1 if valid, 0 if invalid |
-| `OP_CHECKSIGADD` | Pops pubkey, signature, and counter; pushes counter+1 if valid, counter if invalid |
-
-### 11.2 Building a 2-of-2 Multisig in Tapscript ✅
+### 10.2 Script Path Spend (The Fallback)
+If the Key Path is impossible (e.g., keys are lost, or parties disagree), a specific leaf from the tree can be used.
+*   **Mechanism**:
+    1.  Reveal the **Leaf Script**.
+    2.  Reveal the **Control Block** (The Internal Key + Parity + Merkle Proof).
+    3.  Provide the satisfying data (signatures, etc.) for that specific script.
+*   **Privacy**: Only the utilized leaf is revealed. All other branches remain hidden.
 
 ```mermaid
 graph TD
-    subgraph Script["2-of-2 Multisig Script"]
-        S1["<pubkey0>"]
-        S2["OP_CHECKSIG"]
-        S3["<pubkey1>"]
-        S4["OP_CHECKSIGADD"]
-        S5["OP_2"]
-        S6["OP_EQUAL"]
+    subgraph Spending["Spending Logic"]
+        UTXO["Taproot UTXO"]
+        CHOICE{Can we sign<br/>with Key Path?}
     end
     
-    subgraph Execution["Execution with valid signatures"]
-        E1["Stack: [sig1] [sig0]"]
-        E2["Push pubkey0, CHECKSIG → [sig1] [1]"]
-        E3["Push pubkey1, CHECKSIGADD → [1] → [2]"]
-        E4["Push 2, EQUAL → [true]"]
+    subgraph KeyPath["Key Path"]
+        SIG["Provide 1 Schnorr Sig"]
+        PRIV["Result: Efficient, Private"]
     end
     
-    Script --> Execution
+    subgraph ScriptPath["Script Path"]
+        REVEAL["Reveal Script + Control Block"]
+        EXEC["Execute Script"]
+        RES["Result: Proven valid, branches hidden"]
+    end
+    
+    UTXO --> CHOICE
+    CHOICE -->|Yes| SIG --> PRIV
+    CHOICE -->|No| REVEAL --> EXEC --> RES
+```
+
+---
+
+## Chapter 11: Tapscript (BIP 342)
+
+### 11.1 Updates to the Language
+Tapscript is the name for the scripting language used in Taproot leaves.
+1.  **Schnorr-Native**: `OP_CHECKSIG` now verifies Schnorr signatures (32-byte keys, 64-byte sigs).
+2.  **`OP_CHECKSIGADD`**: Replaces `OP_CHECKMULTISIG`. It allows for more efficient batch verification of multisig setups by incrementing a counter rather than checking a list.
+3.  **Success Opcodes**: Any opcode strictly undefined is now `OP_SUCCESS`. If a node encounters `OP_SUCCESS`, the script effectively returns "True" immediately (for the upgrader). This allows future soft forks to introduce new logic without breaking old nodes.
+
+### 11.2 The Control Block
+When spending via script path, you must provide the **Control Block**. This data structure proves that the script you are executing is indeed committed inside the Output Key.
+*   **Q (Internal Key)**: The starting point before the tweak.
+*   **Merkle Path**: The hashes required to prove the script's inclusion in the root.
+*   **Leaf Version**: Currently `0xC0` (Tapscript).
+
+```mermaid
+classDiagram
+    class ControlBlock {
+        +byte leaf_version
+        +byte[32] internal_key
+        +vector~byte[32]~ merkle_path
+    }
+    class WitnessStack {
+        +vector~byte~ ScriptArgs
+        +byte[] Script
+        +ControlBlock CB
+    }
 ```

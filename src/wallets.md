@@ -1,125 +1,150 @@
 # Part III: Key Management & Wallets
 
-## Chapter 5: Hierarchical Deterministic Wallets (BIP32) ✅
+## Chapter 5: HD Wallets & Standards (BIP32/39/44)
 
-### 5.1 The Problem HD Wallets Solve ✅
+### 5.1 From Randomness to Determinism
 
-In the early days of Bitcoin, every new address required a new random private key. If you lost your wallet file without backing up that *specific* key, your money was gone. **Hierarchical Deterministic (HD) Wallets** solved this by allowing an infinite number of keys to be derived from a single "Master Seed". One backup of 12 or 24 words can now recover your entire financial history forever.
+In the early days of Bitcoin (the "Just a Bunch of Keys" or JBOK era), every new address required a new random private key. This was a nightmare for backups: if you generated 100 new addresses after your last backup, those funds were at risk.
 
-```mermaid
-graph TD
-    subgraph Old["Random Key Generation"]
-        R1["Key 1"] 
-        R2["Key 2"]
-        R3["Key 3"]
-        R4["..."]
-        B1["Backup: Save every key"]
-    end
-    
-    subgraph HD["Hierarchical Deterministic"]
-        SEED["Single Seed"]
-        K1["Key 1"]
-        K2["Key 2"]
-        K3["Key 3"]
-        K4["Infinite keys..."]
-        B3["Backup: Just the seed"]
-    end
-    
-    SEED --> K1
-    SEED --> K2
-    SEED --> K3
-    SEED --> K4
-```
+**Hierarchical Deterministic (HD) Wallets (BIP 32)** solved this by creating a tree structure. A single **Master Seed** can mathematically derive an infinite tree of child keys.
+1.  **Backup once**: Write down the seed.
+2.  **Use forever**: Every future key is deterministically calculable from that seed.
 
-### 5.2 Extended Keys and Derivation Algorithm ✅
-
-An **Extended Key** (xprv or xpub) is a standard key plus a 32-byte **Chain Code**. The Chain Code acts as extra entropy that allows us to derive child keys without exposing the parent's private key.
-
-**Hardened Derivation** (using the parent's private key) creates a firewall: even if a child key is compromised, it is mathematically impossible to climb back up and find the parent key. **Normal Derivation** allows an xpub to generate millions of child *public* keys, which is perfect for online shops that need a new address for every customer but never want to store a private key on a web server.
+### 5.2 Mnemonic Codes (BIP 39)
+Humans are bad at remembering 256-bit binary numbers. BIP 39 standardized the conversion of entropy into a user-friendly list of words.
+*   **Entropy**: You start with 128-256 bits of randomness.
+*   **Checksum**: A hash is appended to detect typos.
+*   **Mnemonic**: The bits are sliced into 11-bit chunks, each mapping to a word list (2048 words).
+*   **Seed**: The mnemonic + an optional "passphrase" is hashed (PBKDF2) to produce the 512-bit Root Seed.
 
 ```mermaid
 graph TD
-    subgraph Input["Derivation Input"]
-        PARENT["Parent Key + Chain Code"]
-        INDEX["Child Index (32-bit)"]
-        HARD{Hardened?}
+    subgraph Creation["Wallet Creation"]
+        ENT["Random Entropy (128-256 bits)"]
+        CS["Checksum"]
+        WORDS["Mnemonic Words (12-24 words)"]
+        PASS["User Passphrase (Optional)"]
+        SEED["512-bit Binary Seed"]
     end
     
-    subgraph HMAC["HMAC-SHA512"]
-        H["Key: Parent Chain Code<br/>Data: [key data] || [index]"]
-    end
-    
-    subgraph Output["64-byte Output"]
-        LEFT["Left 32 bytes<br/>Add to parent key (mod n)"]
-        RIGHT["Right 32 bytes<br/>New chain code"]
-    end
-    
-    PARENT --> HARD
-    INDEX --> HARD
-    HARD -->|"Yes: 0x00 || private key || index"| H
-    HARD -->|"No: compressed pubkey || index"| H
-    H --> LEFT
-    H --> RIGHT
-    LEFT --> CHILD["Child Private Key"]
-    RIGHT --> CHAIN["Child Chain Code"]
+    ENT --> CS
+    ENT --> WORDS
+    CS --> WORDS
+    WORDS --> SEED
+    PASS --> SEED
+    SEED --> ROOT["Master Node (m)"]
 ```
+
+### 5.3 BIP 32: The Derivation Engine
+
+BIP 32 defines how to move from a parent key to a child key. It introduces the **Extended Key** (`xprv` / `xpub`), which consists of:
+1.  **Key**: The 33-byte compressed public or private key.
+2.  **Chain Code**: A 32-byte "blinding factor" or extra entropy.
+
+#### Normal vs. Hardened Derivation
+*   **Normal Derivation (Index 0 to $2^{31}-1$)**: Can derive Child Public Key from Parent Public Key.
+    *   *Pro*: Allows "Watch-Only" wallets (web servers can generate deposit addresses without spending keys).
+    *   *Con*: If a child private key leaks AND the parent chain code is known, the parent private key can be calculated.
+*   **Hardened Derivation (Index $2^{31}$ to $2^{32}-1$)**: Requires Parent Private Key.
+    *   *Pro*: Firewall. Child key leakage typically cannot compromise the parent.
+    *   *Con*: Cannot derive public keys hierarchy from an `xpub` alone.
+
+```mermaid
+graph TD
+    subgraph HMAC["HMAC-SHA512 Function"]
+        H["Key: Parent Chain Code<br/>Data: Parent Key || Index"]
+    end
+    
+    subgraph Output["Split Output"]
+        L["Left 32B (Key Modifier)"]
+        R["Right 32B (Child Chain Code)"]
+    end
+    
+    H --> L
+    H --> R
+    L --> CHILD["Child Key"]
+    R --> CHILD
+```
+
+### 5.4 Standard Derivation Paths
+To ensure different wallets are compatible, we adhere to path standards (BIP 43/44).
+Path structure: `m / purpose' / coin_type' / account' / change / address_index`
+*   **Purpose**: The version of Bitcoin script (e.g., 44' for Legacy, 84' for SegWit, 86' for Taproot).
+*   **Coin Type**: 0' for Bitcoin, 1' for Testnet.
+*   **Account**: Logical separation of funds.
+*   **Change**: 0 for external (receiving), 1 for internal (change addresses).
 
 ---
 
-## Chapter 6: Wallet Architecture ⚠️
+## Chapter 6: The Modern Core Wallet
 
-### 6.1 ScriptPubKeyManagers (SPKM) ⚠️
+### 6.1 Architecture: From `bitcoind` to `CWallet`
 
-A modern Bitcoin wallet is actually a collection of specialized managers. Each `ScriptPubKeyMan` is responsible for a specific type of address (e.g., Taproot vs. Native SegWit). This modularity allows Bitcoin Core to support multiple address types simultaneously within the same wallet file while keeping the signing logic for each type isolated.
+In Bitcoin Core, the wallet is modular. The central object `CWallet` manages the database (BerkeleyDB or SQLite) and orchestrates sub-components.
+
+#### ScriptPubKeyManagers (SPKMs)
+A single wallet can manage mixed script types. It does this via SPKMs. Each SPKM is responsible for a specific derivation path and script type.
+*   A user upgrading to Taproot doesn't need a new wallet file; the wallet simply adds a new `BECH32M` SPKM to the existing container.
 
 ```mermaid
 graph TD
-    subgraph CWallet["CWallet"]
-        W["Wallet Container"]
+    subgraph CWallet["CWallet Instance"]
+        W["Wallet Coordinator"]
     end
     
-    subgraph SPKMs["ScriptPubKeyManagers (8 total for descriptor wallet)"]
-        subgraph External["External (Receive)"]
-            E1["LEGACY SPKM"]
-            E2["P2SH-SEGWIT SPKM"]
-            E3["BECH32 SPKM"]
-            E4["BECH32M SPKM"]
-        end
-        subgraph Internal["Internal (Change)"]
-            I1["LEGACY SPKM"]
-            I2["P2SH-SEGWIT SPKM"]
-            I3["BECH32 SPKM"]
-            I4["BECH32M SPKM"]
-        end
+    subgraph SPKMs["Active SPKMs"]
+        E1["Legacy (BIP44)"]
+        E2["Native SegWit (BIP84)"]
+        E3["Taproot (BIP86)"]
     end
     
     W --> E1
     W --> E2
     W --> E3
-    W --> E4
-    W --> I1
-    I3 --> I4
 ```
 
-### 6.2 Legacy vs Descriptor Wallets ⚠️
+### 6.2 Output Descriptors
 
-Bitcoin has moved from "Legacy" wallets (storing raw keys in a pool) to **Descriptor Wallets**. Descriptors are scripts that perfectly describe how to derive keys and construct addresses. They are unambiguous and portable, meaning you can move a descriptor between different wallet software (like Core to Sparrow) and always arrive at the exact same addresses and balance.
+Legacy wallets were a "bag of keys." Modern Bitcoin Core wallets are **Descriptor Wallets**.
+A descriptor is a human-readable string that unambiguously describes the script creation and key derivation.
 
-### 6.3 Wallet Recovery & Blockchain Scanning ✅
+Example Taproot Descriptor:
+`tr([d34db33f/86'/0'/0']xpub.../0/*)#checksum`
 
-Recovering a wallet is one of the most resource-intensive tasks a node performs. Because the blockchain doesn't store "balances," the wallet must generate a significant number of keys (the "gap limit," usually 2000), calculate their corresponding addresses, and then read every block in the blockchain's history to see if any of those addresses ever received or spent money.
+This tells the wallet:
+1.  `tr(...)`: We are using Taproot outputs (P2TR).
+2.  `[...]`: The source key fingerprint and derivation path (for hardware wallet verification).
+3.  `/0/*`: We are generating receiving addresses (index 0) sequentially (*).
+
+### 6.3 Transaction Building & Coin Control
+
+The wallet is not just a key storage; it is a transaction factory.
+1.  **Coin Control**: The user (or algorithm) selects specific UTXOs to spend.
+2.  **Fee Estimation**: The wallet queries the node's mempool to calculate the sat/vbyte needed for confirmation.
+3.  **Change Handling**: If inputs > target amount, the wallet generates a change address (via the Internal chain of the correct SPKM) to receive the remainder.
 
 ```mermaid
-graph TD
-    subgraph Scan["3. Blockchain Scan"]
-        SET["Address Lookup Set"] --> BLOCK["For each block 0..tip"]
-        BLOCK --> TX["For each transaction"]
-        TX --> CHECK["Check inputs and outputs"]
+graph LR
+    subgraph Inputs
+        UTXO1["UTXO A (0.5 BTC)"]
+        UTXO2["UTXO B (0.2 BTC)"]
     end
     
-    subgraph Track["4. UTXO Tracking"]
-        CHECK --> RECV["Output matches? Add UTXO"]
-        CHECK --> SPEND["Input matches? Remove UTXO"]
-        RECV --> BAL["Sum = Balance"]
+    subgraph Logic
+        SEL["Coin Selection"]
+        SIGN["Sign (Schnorr/ECDSA)"]
     end
+    
+    subgraph Outputs
+        DEST["Destination (0.6 BTC)"]
+        CHANGE["Change (0.099.. BTC)"]
+        FEE["Fee"]
+    end
+    
+    UTXO1 --> SEL
+    UTXO2 --> SEL
+    SEL --> SIGN
+    SIGN --> DEST
+    SIGN --> CHANGE
+    SIGN --> FEE
 ```

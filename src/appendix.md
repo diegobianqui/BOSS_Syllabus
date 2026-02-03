@@ -1,43 +1,45 @@
 # Appendix: Quick Reference
-## A. BIP Standards Summary ✅
+
+## A. BIP Standards Summary
 
 | BIP | Name | Purpose |
 |-----|------|---------|
-| BIP32 | HD Wallets | Deterministic key derivation from seed |
-| BIP39 | Mnemonic | Human-readable seed words |
-| BIP44 | Multi-Account | Standard derivation paths |
-| BIP84 | Native SegWit | Derivation for P2WPKH |
-| BIP86 | Taproot Single Key | Derivation for P2TR key-path |
-| BIP340 | Schnorr Signatures | Signature algorithm for Taproot |
-| BIP341 | Taproot | Output and spending rules |
-| BIP342 | Tapscript | Script rules for Taproot |
+| BIP 32 | HD Wallets | Deterministic key derivation from seed |
+| BIP 39 | Mnemonic | Human-readable seed words |
+| BIP 44 | Multi-Account | Standard derivation paths |
+| BIP 84 | Native SegWit | Derivation for P2WPKH |
+| BIP 86 | Taproot Single Key | Derivation for P2TR key-path |
+| BIP 340 | Schnorr Signatures | Signature algorithm for Taproot |
+| BIP 341 | Taproot | Output and spending rules |
+| BIP 342 | Tapscript | Script rules for Taproot |
+| BIP 174 | PSBT | Partially Signed Bitcoin Transactions format |
 
-## B. Common Derivation Paths ✅
+## B. Common Derivation Paths
 
 | Path | Network | Type |
 |------|---------|------|
-| m/44'/0'/0' | Mainnet | Legacy P2PKH |
-| m/49'/0'/0' | Mainnet | Wrapped SegWit P2SH-P2WPKH |
-| m/84'/0'/0' | Mainnet | Native SegWit P2WPKH |
-| m/86'/0'/0' | Mainnet | Taproot P2TR |
-| m/86'/1'/0' | Testnet/Signet | Taproot P2TR |
+| `m/44'/0'/0'` | Mainnet | Legacy P2PKH |
+| `m/49'/0'/0'` | Mainnet | Wrapped SegWit P2SH-P2WPKH |
+| `m/84'/0'/0'` | Mainnet | Native SegWit P2WPKH |
+| `m/86'/0'/0'` | Mainnet | Taproot P2TR |
+| `m/86'/1'/0'` | Testnet/Signet | Taproot P2TR |
 
-## C. Script Opcodes Reference ✅
+## C. Script Opcodes Reference
 
 | Opcode | Hex | Description |
 |--------|-----|-------------|
-| OP_0 | 0x00 | Push empty byte array |
-| OP_1-OP_16 | 0x51-0x60 | Push numbers 1-16 |
-| OP_RETURN | 0x6a | Marks output as unspendable |
-| OP_DUP | 0x76 | Duplicate top stack item |
-| OP_EQUAL | 0x87 | Compare top two items |
-| OP_EQUALVERIFY | 0x88 | Equal then verify |
-| OP_CHECKSIG | 0xac | Verify signature |
-| OP_CHECKSIGADD | 0xba | Verify and add to counter (Tapscript) |
-| OP_CHECKLOCKTIMEVERIFY | 0xb1 | Time/height lock (BIP 65) |
-| OP_CHECKSEQUENCEVERIFY | 0xb2 | Relative time lock (BIP 68, 112) |
+| `OP_0` | 0x00 | Push empty byte array |
+| `OP_1`-`OP_16` | 0x51-0x60 | Push numbers 1-16 |
+| `OP_RETURN` | 0x6a | Marks output as unspendable |
+| `OP_DUP` | 0x76 | Duplicate top stack item |
+| `OP_EQUAL` | 0x87 | Compare top two items |
+| `OP_EQUALVERIFY` | 0x88 | Equal then verify (fails if not equal) |
+| `OP_CHECKSIG` | 0xac | Verify signature |
+| `OP_CHECKSIGADD` | 0xba | Verify and add to counter (Tapscript) |
+| `OP_CHECKLOCKTIMEVERIFY` | 0xb1 | Absolute Time/Block lock (CLTV) |
+| `OP_CHECKSEQUENCEVERIFY` | 0xb2 | Relative Time/Block lock (CSV) |
 
-## D. Size Reference ✅
+## D. Size Reference
 
 | Component | Size |
 |-----------|------|
@@ -45,9 +47,24 @@
 | Public key (compressed) | 33 bytes |
 | Public key (x-only) | 32 bytes |
 | Schnorr signature | 64 bytes |
-| P2TR output script | 34 bytes (OP_1 + push32 + key) |
-| Outpoint | 36 bytes (txid + vout) |
-| Value | 8 bytes |
+| ECDSA signature | ~71-72 bytes (DER encoded) |
+| P2TR output script | 34 bytes (`OP_1` + push32 + key) |
+| Outpoint | 36 bytes (txid 32B + vout 4B) |
+| Value (Amount) | 8 bytes (int64) |
+| Block Header | 80 bytes |
+
+## E. Essential RPC Commands
+
+| Command | Category | Description |
+|---------|----------|-------------|
+| `getblockchaininfo` | Network | Status of chain, sync progress, and active soft forks. |
+| `getnewaddress` | Wallet | Generates a new address (type depends on wallet config). |
+| `listunspent` | Wallet | Returns array of UTXOs owned by the wallet. |
+| `createrawtransaction` | Raw | Creates an unsigned TX hex from inputs and outputs. |
+| `signrawtransactionwithwallet` | Wallet | Signs inputs using keys found in the wallet. |
+| `sendrawtransaction` | Network | Broadcasts a signed TX hex to the P2P network. |
+| `testmempoolaccept` | Debug | Validation check (dry-run) for a transaction without broadcasting. |
+| `scantxoutset` | Blockchain | Scans UTXO set for specific descriptors (useful for recovering funds). |
 | TXID | 32 bytes |
 
 ## E. Tagged Hash Tags ✅
