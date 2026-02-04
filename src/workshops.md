@@ -1,10 +1,10 @@
-# Part VIII: Engineering Labs
+# Part IX: Engineering Labs
 
-## Chapter 15: Workshop: Hand-Crafting Taproot
+## Chapter 18: Workshop: Hand-Crafting Taproot
 
 This workshop focuses on the "bare metal" construction of Taproot transactions. We will bypass high-level libraries to implement the cryptographic "plumbing" defined in BIP 340, 341, and 342. This is essential for understanding *why* the protocol works the way it does.
 
-### 15.1 The "Plumbing" of Protocol Upgrades (BIP 341)
+### 18.1 The "Plumbing" of Protocol Upgrades (BIP 341)
 
 In Taproot, every output is technically a pay-to-public-key. Even complex scripts are "hidden" inside a tweaked public key. To construct a Taproot address manually, we must perform this tweaking process ourselves.
 
@@ -15,7 +15,7 @@ Instead, we use a **NUMS point**—a point on the curve for which no one knows t
 
 > **Source:** [BIP 341 - Constructing and Spending Taproot Outputs](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) (See "Constructing and spending Taproot outputs")
 
-### 15.2 Manual Multisig Construction (BIP 342)
+### 18.2 Manual Multisig Construction (BIP 342)
 
 Tapscript (SegWit v1) changes how multisig works. The inefficient `OP_CHECKMULTISIG` (which required checking every public key against every signature) is removed.
 
@@ -33,7 +33,7 @@ Instead, we use a combination of `OP_CHECKSIG` and `OP_CHECKSIGADD`.
 
 > **Source:** [BIP 342 - Script Validation Rules](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki) (See "Execution" regarding `OP_CHECKSIGADD`)
 
-### 15.3 The Private Key Tweak (Key Path Spend)
+### 18.3 The Private Key Tweak (Key Path Spend)
 
 This is the most common stumbling block. If you are spending via the **Key Path**, you are technically signing for the **Output Key (Q)**, not your original Internal Key (P).
 
@@ -47,7 +47,7 @@ You must manually compute this scalar addition modulo the curve order. If you tr
 
 > **Source:** [BIP 340 - Schnorr Signatures for secp256k1](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) (See "Design" regarding linearity)
 
-### 15.4 Building the Control Block (Script Path Spend)
+### 18.4 Building the Control Block (Script Path Spend)
 
 When spending via the **Script Path**, you must provide a "Control Block" in the witness stack. This block proves to the verifier that the script you are executing is indeed a leaf in the Merkle tree committed to in the address.
 
@@ -59,7 +59,7 @@ When spending via the **Script Path**, you must provide a "Control Block" in the
 
 > **Source:** [BIP 341 - Spending rules](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) (See "Script validation")
 
-### 15.5 Provably Unspendable Data (`OP_RETURN`)
+### 18.5 Provably Unspendable Data (`OP_RETURN`)
 
 To store data on-chain (like proving you completed a challenge), we use `OP_RETURN`. This opcode marks the output as invalid, meaning it can never be spent. This allows us to carry up to 80 bytes of arbitrary data without bloating the UTXO set, as full nodes can prune these outputs knowing they are dead ends.
 
