@@ -4,6 +4,7 @@
 - [Part I: Bitcoin Core Architecture](./architecture.md)
 - [Part II: Cryptographic Foundations](./cryptography.md)
 - [Part III: Key Management & Wallets](./wallets.md)
+    - [Chapter 7: Advanced Coin Selection](./coin_selection.md)
 - [Part IV: Transactions Deep Dive](./transactions.md)
 - [Part V: Scripting & Contracts](./contracts.md)
 - [Part VI: Taproot & Modern Bitcoin](./taproot.md)

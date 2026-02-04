@@ -123,6 +123,8 @@ The wallet is not just a key storage; it is a transaction factory.
 2.  **Fee Estimation**: The wallet queries the node's mempool to calculate the sat/vbyte needed for confirmation.
 3.  **Change Handling**: If inputs > target amount, the wallet generates a change address (via the Internal chain of the correct SPKM) to receive the remainder.
 
+*For a deep dive into the algorithms behind UTXO selection (Branch & Bound, Waste Metric, etc.), see **[Chapter 7: Advanced Coin Selection](./coin_selection.md)**.*
+
 ```mermaid
 graph LR
     subgraph Inputs
