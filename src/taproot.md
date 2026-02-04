@@ -41,6 +41,31 @@ graph TD
     F --> OUT
 ```
 
+### 9.4 Technical Implementation: Tweaking & Witness Programs
+> Sources: [BIP 340 (Schnorr)](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) & [BIP 341 (Taproot)](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)
+
+Implementing Taproot requires moving from 33-byte ECDSA public keys to 32-byte X-only Schnorr keys and applying a cryptographic "tweak."
+
+#### 1. X-Only Public Keys (BIP 340)
+Schnorr signatures in Bitcoin use only the X-coordinate of a point on the secp256k1 curve.
+*   The Y-coordinate is implicitly assumed to be **even**.
+*   If a derived public key has an odd Y, the private key `d` is negated (`n - d`) to ensure the resulting point has an even Y.
+
+#### 2. The TapTweak (BIP 341)
+The final on-chain public key `P` is a "tweaked" version of the internal key `Q`.
+1.  **Internal Key (Q)**: The original 32-byte X-only key.
+2.  **Tweak (t)**: `t = TaggedHash("TapTweak", Q || MerkleRoot)`.
+    *   *Note: If there are no script paths, the MerkleRoot is omitted.*
+3.  **Output Key (P)**: `P = Q + t*G`.
+4.  **Private Key Update**: The spender must use the tweaked private key `p = q + t` (where `q` is the internal private key).
+
+#### 3. Witness Program Construction
+A Pay-to-Taproot (P2TR) output is defined by a specific Witness Program in the `scriptPubKey`:
+*   **Version**: `0x51` (OP_1).
+*   **Length**: `0x20` (32 bytes).
+*   **Program**: The 32-byte Output Key `P`.
+*   **Final Hex**: `5120<32_byte_P>`.
+
 ---
 
 ## Chapter 10: Spending Paths
@@ -91,7 +116,9 @@ graph TD
 ### 11.1 Updates to the Language
 Tapscript is the name for the scripting language used in Taproot leaves.
 1.  **Schnorr-Native**: `OP_CHECKSIG` now verifies Schnorr signatures (32-byte keys, 64-byte sigs).
-2.  **`OP_CHECKSIGADD`**: Replaces `OP_CHECKMULTISIG`. It allows for more efficient batch verification of multisig setups by incrementing a counter rather than checking a list.
+2.  **`OP_CHECKSIGADD`**: Replaces `OP_CHECKMULTISIG`.
+    *   *Legacy (SegWit v0)*: `OP_CHECKMULTISIG` was inefficient because it required the verifier to check every provided signature against potentially every public key until a match was found.
+    *   *Tapscript*: `OP_CHECKSIGADD` assumes a 1-to-1 mapping. It consumes a signature and a counter. If the signature is valid for the corresponding public key, it increments the counter. This allows for linear batch verification and strictly enforced ordering.
 3.  **Success Opcodes**: Any opcode strictly undefined is now `OP_SUCCESS`. If a node encounters `OP_SUCCESS`, the script effectively returns "True" immediately (for the upgrader). This allows future soft forks to introduce new logic without breaking old nodes.
 
 ### 11.2 The Control Block

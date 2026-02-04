@@ -47,4 +47,36 @@ sequenceDiagram
     W->>SPKM: Sign for Inputs
     W->>W: testmempoolaccept
     W->>W: Broadcast
+
+---
+
+## Chapter 14: Blockchain Scanning & UTXO Accounting
+> Source: [Bitcoin Core RPC Documentation](https://developer.bitcoin.org/reference/rpc/)
+
+For watch-only wallets or indexers that do not rely on the built-in `CWallet` scanning, a custom blockchain traversal is required to calculate balances and track state.
+
+### 14.1 The Scanning Loop
+The most common pattern involves iterating through blocks sequentially via the RPC interface.
+1.  **Block Hash**: Retrieve the hash for a specific height: `getblockhash <height>`.
+2.  **Verbose Block**: Retrieve the full block data including transaction hexes: `getblock <hash> 2`.
+3.  **Transaction Iteration**: Decode each transaction and inspect its inputs and outputs.
+
+### 14.2 The UTXO Set Logic (Accounting)
+To maintain an accurate balance, the application must manage a local set of **Unspent Transaction Outputs (UTXOs)**.
+
+#### Input Processing (Gifts/Receiving)
+For every output in a transaction:
+1.  Compare the `scriptPubKey` against your list of derived addresses/programs.
+2.  If it matches: 
+    *   Add the amount to the total balance.
+    *   Store the **Outpoint** (`txid:vout`) and its value in the local UTXO set.
+
+#### Output Processing (Spending)
+For every input in a transaction:
+1.  Check if the input's `txid` and `vout` (Outpoint) exist in your local UTXO set.
+2.  If it matches:
+    *   Subtract the UTXO value from the total balance.
+    *   Remove the Outpoint from the local UTXO set (it is now spent).
+
+This "Double-Entry" style accounting ensures that the local balance reflects the on-chain reality without requiring a full node re-scan.
 ```

@@ -65,6 +65,14 @@ To develop robust solutions, we require a stable environment. Mainnet is expensi
 *   **Access**: Free coins for testing complex flows.
 *   **Validation**: Identical script validation rules to Mainnet.
 
+#### Interacting with Signet
+Developers typically interact with a Signet node using the `bitcoin-cli` tool.
+*   **Check Status**: `bitcoin-cli -signet getblockchaininfo`
+*   **Get Block Count**: `bitcoin-cli -signet getblockcount`
+*   **Network Parameters**: Signet uses a different address prefix (`tb1...`) and magic bytes to prevent cross-network pollution.
+
+---
+
 ### 2.2 Data Propagation Flow
 
 Data moves through the node in two phases: **Relay** (unconfirmed) and **Mining** (confirmed).
