@@ -13,7 +13,7 @@
     - [Chapter 13: Transaction Building](./implementation.md#chapter-13-transaction-building)
     - [Chapter 14: Blockchain Scanning](./implementation.md#chapter-14-blockchain-scanning--utxo-accounting)
 - [Part VIII: The Lightning Network](./lightning.md)
-    - [Chapter 15: Architecture & Operations](./lightning.md)
+    - [Chapter 15: Architecture & Operations](./lightning.md#chapter-15-architecture--operations)
     - [Chapter 16: Route Mathematics & Logistics](./route_math.md)
     - [Chapter 17: The Sphinx Protocol & Onion Construction](./onion_mechanics.md)
 - [Part IX: Engineering Labs](./workshops.md)
