@@ -74,6 +74,33 @@ Path structure: `m / purpose' / coin_type' / account' / change / address_index`
 *   **Account**: Logical separation of funds.
 *   **Change**: 0 for external (receiving), 1 for internal (change addresses).
 
+### 5.5 Deep Dive: BIP 32 Serialization & Derivation
+> Source: [BIP 32 - Hierarchical Deterministic Wallets](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+
+To implement a functional HD wallet, one must handle the raw byte structure of Extended Keys and the HMAC-based derivation logic.
+
+#### Extended Key Serialization
+An Extended Key (`xprv` or `xpub`) is a 78-byte structure:
+*   **Version (4 bytes)**: Magic bytes (e.g., `0x0488ADE4` for `xprv`).
+*   **Depth (1 byte)**: Distance from master (0x00 for root).
+*   **Parent Fingerprint (4 bytes)**: First 32 bits of `Identifier(Kpar)`.
+*   **Child Number (4 bytes)**: Index `i` (Big-endian).
+*   **Chain Code (32 bytes)**: Extra entropy for derivation.
+*   **Key Data (33 bytes)**: 
+    *   Private: `0x00 || 32-byte key`.
+    *   Public: `Compressed public key`.
+
+#### The `CKDpriv` Algorithm
+The Child Key Derivation function for private keys is calculated as follows:
+1.  **Compute HMAC-SHA512**:
+    *   **Key**: Parent Chain Code.
+    *   **Data**: 
+        *   Hardened (`i >= 2^31`): `0x00 || kpar || i`.
+        *   Normal: `point(kpar) || i`.
+2.  **Split Output**: 64-byte result is split into `I_L` (left 32B) and `I_R` (right 32B).
+3.  **Key Update**: `child_k = (I_L + kpar) % n`.
+4.  **Chain Code Update**: `child_c = I_R`.
+
 ---
 
 ## Chapter 6: The Modern Core Wallet
@@ -122,6 +149,8 @@ The wallet is not just a key storage; it is a transaction factory.
 1.  **Coin Control**: The user (or algorithm) selects specific UTXOs to spend.
 2.  **Fee Estimation**: The wallet queries the node's mempool to calculate the sat/vbyte needed for confirmation.
 3.  **Change Handling**: If inputs > target amount, the wallet generates a change address (via the Internal chain of the correct SPKM) to receive the remainder.
+
+*For a deep dive into the algorithms behind UTXO selection (Branch & Bound, Waste Metric, etc.), see **[Chapter 7: Advanced Coin Selection](./coin_selection.md)**.*
 
 ```mermaid
 graph LR
