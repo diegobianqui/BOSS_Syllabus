@@ -14,4 +14,5 @@
     - [Chapter 17: The Sphinx Protocol & Onion Construction](./onion_mechanics.md)
 - [Part IX: Engineering Labs](./workshops.md)
 - [Part X: The Bitcoin Core Test Framework](./testing.md)
+- [Part XI: Warnet: The Wrath of Nalo](./WARNET.md)
 - [Appendix: Quick Reference](./appendix.md)
